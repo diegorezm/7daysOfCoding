@@ -4,7 +4,7 @@ from typing import List
 
 import pandas as pd
 
-dir_path = "./Datasets/dados_emprestimos/"
+dir_path = "../Datasets/dados_emprestimos/"
 
 files = [join(dir_path,f) for f in listdir(dir_path) if isfile((join(dir_path, f)))]
 
@@ -27,5 +27,4 @@ combined_dtfs = embeded.astype({
     'matricula_ou_siape': 'str',
     'tipo_vinculo_usuario': 'str'
 })
-
-print(combined_dtfs["data_emprestimo"])
+print(combined_dtfs)
