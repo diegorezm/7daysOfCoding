@@ -2,30 +2,18 @@ from os import listdir
 from os.path import isfile, join
 from typing import List
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
 def read_dir(dir_path: str) -> pd.DataFrame:
     files = [join(dir_path,f) for f in listdir(dir_path) if isfile((join(dir_path, f)))]
     dtfs: List[pd.DataFrame] = []
-    date_format = "%Y/%m/%d %H:%M:%S.%f"
     for file in files:
         csv = pd.read_csv(file)
-        csv["data_devolucao"] = pd.to_datetime(csv["data_devolucao"], format=date_format)
-        csv["data_renovacao"] = pd.to_datetime(csv["data_renovacao"], format=date_format)
-        csv["data_emprestimo"] = pd.to_datetime(csv["data_emprestimo"], format=date_format)
         dtfs.append(csv)
     embeded = pd.concat(dtfs, ignore_index=True)
-    combined_dtfs = embeded.astype({
-        'id_emprestimo': 'int',
-        'codigo_barras': 'str',
-        'data_renovacao': 'str',
-        'data_emprestimo': 'str',
-        'data_devolucao': 'str',
-        'matricula_ou_siape': 'str',
-        'tipo_vinculo_usuario': 'str'
-    })
-    combined_dtfs = combined_dtfs.drop_duplicates()
+    combined_dtfs = embeded.drop_duplicates()
     return combined_dtfs
 
 if __name__ == '__main__':
@@ -58,4 +46,37 @@ if __name__ == '__main__':
     emprestimos["CDU_geral"] = CDU_lista
     emprestimos.drop(columns=['registro_sistema'], inplace=True)
     emprestimos['matricula_ou_siape'] = emprestimos['matricula_ou_siape'].astype('string')
-    print(emprestimos.head())
+    date_format = "%Y/%m/%d %H:%M:%S.%f"
+    emprestimos["data_devolucao"] = pd.to_datetime(emprestimos["data_devolucao"], format=date_format)
+    emprestimos["data_renovacao"] = pd.to_datetime(emprestimos["data_renovacao"], format=date_format)
+    emprestimos["data_emprestimo"] = pd.to_datetime(emprestimos["data_emprestimo"], format=date_format)
+
+    # ['id_emprestimo', 'codigo_barras', 'data_renovacao', 'data_emprestimo',                           
+    #   'data_devolucao', 'matricula_ou_siape', 'tipo_vinculo_usuario',                                  
+    #   'id_exemplar', 'colecao', 'biblioteca', 'status_material',                                       
+    #   'localizacao', 'CDU_geral']
+    #   print(emprestimos.columns)
+
+    emprestimos['month'] = emprestimos['data_emprestimo'].dt.strftime('%B')
+    numero_emprestimos_por_mes = emprestimos.groupby('month').size().sort_index()
+
+    df = numero_emprestimos_por_mes.reset_index()
+
+    df.columns = ['mes', 'emprestimos']
+    df = df.sort_values(by=["emprestimos"])
+
+    df.plot(kind='bar', x='mes', y='emprestimos', color='skyblue') 
+
+    # Add titles and labels
+    plt.title("Number of Loans per Month", fontsize=16)
+    plt.xlabel("Month", fontsize=12)
+    plt.ylabel("Number of Loans", fontsize=12)
+    plt.xticks(rotation=45)
+    
+    plt.tight_layout()
+    plt.show()
+
+    worst_months = df.head(2)
+    print("Os meses com menor movimento são: \n")
+    for index, row in worst_months.iterrows():
+        print(f"{row['mes']}\n")
